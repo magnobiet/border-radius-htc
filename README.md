@@ -1,6 +1,6 @@
 # Border Radius HTC v3.0.1
 
-Border Radius for IE6, 7 & 8 support
+Border Radius for Internet Explorer 6, 7 & 8 support
 
 ## Usage
 

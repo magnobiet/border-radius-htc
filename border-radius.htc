@@ -22,6 +22,7 @@ Published date : 2013/09/12
 	// findPosition() borrowed from http://www.quirksmode.org/js/findpos.html
 	function findPosition(obj) {
 
+		// Thanks Douglas Hipolito (https://github.com/douglashipolito)
 		// http://jsbin.com/atiBolE/1/edit?js,console
 		var curleft,
 			curltop;

@@ -1,0 +1,191 @@
+-- Do not remove this if you are using --
+
+Original Author: Remiz Rahnas
+Original Author URL: http://www.htmlremix.com
+Published date: 2008/09/24
+
+Changes by Nick Fetchak:
+- IE8 standards mode compatibility
+- VML elements now positioned behind original box rather than inside of it - should be less prone to breakage
+Published date : 2009/11/18
+
+Changes by Magno Biét:
+- Refactoring code
+Published date : 2013/09/12
+
+
+
+<public:attach event="onContentReady" onevent="onContentReady('v08vnSVo78t4JfjH')" />
+
+<script type="text/javascript">
+
+	// findPosition() borrowed from http://www.quirksmode.org/js/findpos.html
+	function findPosition(obj) {
+
+		// http://jsbin.com/atiBolE/1/edit?js,console
+		var curleft,
+			curltop;
+
+		curleft = curltop = 0;
+
+		if (obj.offsetParent) {
+
+			do {
+
+				curleft += obj.offsetLeft;
+				curtop += obj.offsetTop;
+
+			} while (obj = obj.offsetParent);
+
+		}
+
+		return ({
+			'x': curleft,
+			'y': curtop
+		});
+
+	}
+
+	function onContentReady(classID) {
+
+		if (this.className.match(classID)) {
+			return (false);
+		}
+
+		if (!document.namespaces.v) {
+			document.namespaces.add('v', 'urn:schemas-microsoft-com:vml');
+		}
+
+		this.className = this.className.concat(' ', classID);
+
+		var currentStyles = this.currentStyle['-moz-border-radius'] || this.currentStyle['-webkit-border-radius'] || this.currentStyle['border-radius'] || this.currentStyle['-khtml-border-radius'],
+			arcSize = Math.min(parseInt(currentStyles, 100) / Math.min(this.offsetWidth, this.offsetHeight), 1),
+			fillColor = this.currentStyle.backgroundColor,
+			fillSrc = this.currentStyle.backgroundImage.replace(/^url\("(.+)"\)$/, '$1'),
+			strokeColor = this.currentStyle.borderColor,
+			strokeWeight = parseInt(this.currentStyle.borderWidth, 100),
+			stroked = 'true';
+
+		if (isNaN(strokeWeight)) {
+
+			strokeWeight = 0;
+			strokeColor = fillColor;
+			stroked = 'false';
+
+		}
+
+		this.style.background = 'transparent';
+		this.style.borderColor = 'transparent';
+
+		// Find which element provides position:relative for the target element (default to BODY)
+		var el = this,
+			limit = 100,
+			i = 0,
+			el_zindex = parseInt(el.currentStyle.zIndex, 100);
+
+		while ((typeof(el) !== 'unknown') && (el.currentStyle.position !== 'relative') && (el.tagName != 'BODY')) {
+
+			el = el.parentElement;
+			i++;
+
+			if (i >= limit) {
+				return (false);
+			}
+
+		}
+
+		if (isNaN(el_zindex)) {
+			el_zindex = 0;
+		}
+
+		var rect_size = {
+				'width': this.offsetWidth - strokeWeight,
+				'height': this.offsetHeight - strokeWeight
+			},
+			el_pos = findPosition(el),
+			this_pos = findPosition(this),
+			rect = document.createElement('v:roundrect'),
+			fill = document.createElement('v:fill'),
+			css = el.document.createStyleSheet();
+
+		this_pos.y = this_pos.y + (0.5 * strokeWeight) - el_pos.y;
+		this_pos.x = this_pos.x + (0.5 * strokeWeight) - el_pos.x;
+
+		rect.arcsize = arcSize + 'px';
+		rect.strokecolor = strokeColor;
+		rect.strokeWeight = strokeWeight + 'px';
+		rect.stroked = stroked;
+		rect.style.display = 'block';
+		rect.style.position = 'absolute';
+		rect.style.top = this_pos.y + 'px';
+		rect.style.left = this_pos.x + 'px';
+		rect.style.width = rect_size.width + 'px';
+		rect.style.height = rect_size.height + 'px';
+		rect.style.antialias = true;
+		rect.style.zIndex = el_zindex - 1;
+
+		fill.color = fillColor;
+		fill.src = fillSrc;
+		fill.type = 'tile';
+
+		rect.appendChild(fill);
+		el.appendChild(rect);
+
+		css.addRule('v\\:roundrect', 'behavior: url(#default#VML)');
+		css.addRule('v\\:fill', 'behavior: url(#default#VML)');
+
+		if (/msie|MSIE 6/.test(navigator.userAgent) && (strokeWeight > 0)) { // IE6 doesn't support transparent borders, use padding to offset original element
+			this.style.borderStyle = 'none';
+			this.style.paddingTop = parseInt(this.currentStyle.paddingTop || 0, 100) + strokeWeight;
+			this.style.paddingBottom = parseInt(this.currentStyle.paddingBottom || 0, 100) + strokeWeight;
+		}
+
+		if (typeof(window.rounded_elements) === 'undefined') {
+
+			window.rounded_elements = [];
+
+			if (typeof(window.onresize) === 'function') {
+				window.previous_onresize = window.onresize;
+			}
+
+			window.onresize = windowResize;
+
+		}
+
+		this.element.vml = rect;
+		window.rounded_elements.push(this.element);
+
+	}
+
+	function windowResize() {
+
+		if (typeof(window.rounded_elements) === 'undefined') {
+			return (false);
+		}
+
+		for (var i in window.rounded_elements) {
+
+			var el = window.rounded_elements[i],
+				strokeWeight = parseInt(el.currentStyle.borderWidth, 100),
+				parent_pos = findPosition(el.vml.parentNode),
+				pos = findPosition(el);
+
+			if (isNaN(strokeWeight)) {
+				strokeWeight = 0;
+			}
+
+			pos.y = pos.y + (0.5 * strokeWeight) - parent_pos.y;
+			pos.x = pos.x + (0.5 * strokeWeight) - parent_pos.x;
+
+			el.vml.style.top = pos.y + 'px';
+			el.vml.style.left = pos.x + 'px';
+
+		}
+
+		if (typeof(window.previous_onresize) === 'function') {
+			window.previous_onresize();
+		}
+
+	}
+
+</script>
